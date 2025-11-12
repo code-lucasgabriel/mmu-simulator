@@ -41,28 +41,6 @@ class LRU(BaseRepPolicy):
 
     # def _update_memory(self, frames: List[Optional[int]], tlb: List[Tuple[int, int]], page_table: Dict[int, int], page_number: int) -> int:
     def _update_memory(self, mmu, page_number: int) -> Optional[int]:
-        # for idx, _frame_number in enumerate(mmu.frames):
-        #     if _frame_number is None:
-        #         frame_number = idx
-        #         mmu.page_table[page_number] = frame_number
-        #         mmu.frames[frame_number] = page_number
-        #         self.update_state(page_number, frame_number)
-        #         return frame_number
-        
-        # _unused_page_number, frame_number = self.frequency_list.popleft()
-
-        # if _unused_page_number in mmu.page_table:
-        #     del mmu.page_table[_unused_page_number]
-        
-        # mmu.page_table[page_number] = frame_number
-        # mmu.frames[frame_number] = page_number
-        # self.update_state(page_number, frame_number)
-        # return frame_number
-
-
-
-
-    
         idx = self._search_empty_frame(mmu.frames)
         if idx is not None:
             mmu.frames[idx] = page_number
