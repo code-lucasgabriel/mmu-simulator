@@ -23,13 +23,11 @@ class SimulationResult(BaseModel):
 class TraceGenerationConfig(BaseModel):
     """Define a configuração para o novo gerador de trace."""
     
-    # Parâmetros comuns
     algoritmo: str
-    nome_arquivo: str = Field(..., pattern=r"^[a-zA-Z0-9_\-]+\.(in|txt)$") # Validação simples do nome
-    num_enderecos: int = Field(..., gt=0) # Deve ser > 0
-    max_pagina: int = Field(..., ge=0) # Deve ser >= 0
+    nome_arquivo: str = Field(..., pattern=r"^[a-zA-Z0-9_\-]+\.(in|txt)$")
+    num_enderecos: int = Field(..., gt=0) # should be > 0
+    max_pagina: int = Field(..., ge=0) # should be >= 0
     
-    # Parâmetros específicos (opcionais)
     prob_salto: Optional[int] = Field(None, ge=0, le=100) # %
     tamanho_set: Optional[int] = Field(None, ge=0)
     prob_no_set: Optional[int] = Field(None, ge=0, le=100) # %
