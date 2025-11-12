@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MMU Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- <link rel="stylesheet" href="/static/simulator.css"> -->
+
+    <!-- 
+      NEW: This style block adds a faded, non-interactive look
+      to all form elements when they are disabled.
+    -->
+    <style>
+        button:disabled,
+        input:disabled,
+        select:disabled,
+        textarea:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<!-- 
+  FIX: Added 'overflow-y-scroll' to the body.
+  This forces the scrollbar to always be present, reserving its
+  space and preventing the page from "jumping" to the left when
+  the content grows and a real scrollbar appears.
+-->
+<body class="bg-gray-100 text-[#1d1d1f] min-h-dvh p-4 pt-24 overflow-y-scroll">
+
+    <nav class="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-white/70 backdrop-blur-md shadow-lg rounded-2xl p-2 flex space-x-2 border border-gray-200">
+        <button id="nav-btn-simulator"
+                class="py-2 px-5 rounded-xl text-sm font-medium transition-colors bg-blue-600 text-white">
+            Simulator
+        </button>
+        <button id="nav-btn-generator"
+                class="py-2 px-5 rounded-xl text-sm font-medium transition-colors bg-transparent text-gray-500 hover:bg-gray-100">
+            Generator
+        </button>
+    </nav>
+
+    <div class="container mx-auto max-w-7xl w-full">
+        
+        <div id="page-simulator">
+            <h1 class="text-3xl font-bold text-center text-[#1d1d1f] mb-6">
+                MMU Simulator
+            </h1>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto" style="height: 80vh;">
+
+                <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col">
+                    <h2 class="text-xl font-semibold mb-4 text-[#1d1d1f] flex-shrink-0">Configuration</h2>
+                    
+                    <div class="overflow-y-auto pr-2">
+                        <form id="sim-form" class="space-y-4">
+                            <div>
+                                <label for="tlb_entries" class="block text-sm font-medium text-gray-600">TLB Entries</label>
+                                <input type="number" id="tlb_entries" name="tlb_entries" value="16" min="1"
+                                       class="mt-1 block w-full bg-[#f5f5f7] border-gray-300 text-[#1d1d1f] rounded-lg shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                            <div>
+                                <label for="num_frames" class="block text-sm font-medium text-gray-600">Number of Frames (Main Memory)</label>
+                                <input type="number" id="num_frames" name="num_frames" value="64" min="1"
+                                       class="mt-1 block w-full bg-[#f5f5f7] border-gray-300 text-[#1d1d1f] rounded-lg shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                            <div>
+                                <label for="rep_policy" class="block text-sm font-medium text-gray-600">Replacement Policy</label>
+                                <select id="rep_policy" name="rep_policy"
+                                        class="mt-1 block w-full bg-[#f5f5f7] border-gray-300 text-[#1d1d1f] rounded-lg shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="LRU">LRU</option>
+                                    <option value="SecondChance">Second Chance </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="test_file" class="block text-sm font-medium text-gray-600">Load from Test File</label>
+                                <select id="test_file" name="test_file"
+                                        class="mt-1 block w-full bg-[#f5f5f7] border-gray-300 text-[#1d1d1f] rounded-lg shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">-- Manual Input --</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="addresses" class="block text-sm font-medium text-gray-600">Address Trace (Page numbers, one per line)</label>
+                                <textarea id="addresses" name="addresses" rows="10"
+                                          class="mt-1 block w-full bg-[#f5f5f7] border-gray-300 text-[#1d1d1f] rounded-lg shadow-sm p-3 font-mono text-sm focus:ring-blue-500 focus:border-blue-500"
+                                          placeholder="100
+101
+100
+102
+...
+                                          "></textarea>
+                            </div>
+                        </form>
+                    </div>
+
+                    <button type="submit" id="run-button" form="sim-form"
+                            class="w-full flex justify-center py-2 px-4 h-12 items-center border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-white transition-all duration-150 mt-4 flex-shrink-0">
+                        Run Simulation
+                    </button>
+                    <div id="loading-indicator" class="text-center text-blue-600 hidden pt-2">
+                        Running simulation...
+                    </div>
+                </div>
+
+                <div class="space-y-6 flex flex-col" style="height: 100%;">
+                    
+                    <div class="bg-white p-6 rounded-2xl shadow-lg flex-shrink-0">
+                        <h2 class="text-xl font-semibold mb-4 text-[#1d1d1f]">Final Statistics</h2>
+                        <div id="stats-output" class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                            <div class="bg-[#f5f5f7] p-4 rounded-lg">
+                                <div class="text-sm font-medium text-green-600">TLB Hits</div>
+                                <div id="stat-tlb-hits" class="text-2xl font-bold text-[#1d1d1f]">-</div>
+                            </div>
+                            <div class="bg-[#f5f5f7] p-4 rounded-lg">
+                                <div class="text-sm font-medium text-yellow-600">TLB Misses</div>
+                                <div id="stat-tlb-misses" class="text-2xl font-bold text-[#1d1d1f]">-</div>
+                            </div>
+                            <div class="bg-[#f5f5f7] p-4 rounded-lg">
+                                <div class="text-sm font-medium text-red-600">Page Faults</div>
+                                <div id="stat-page-faults" class="text-2xl font-bold text-[#1d1d1f]">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-lg flex-1 flex flex-col">
+                        <h2 class="text-xl font-semibold mb-4 text-[#1d1d1f] flex-shrink-0">Simulation Log</h2>
+                        <pre id="log-output" class="bg-[#f5f5f7] text-gray-700 rounded-lg p-4 overflow-y-auto text-sm font-mono flex-1">Simulation log will appear here...</pre>
+                    </div>
+
+                </div>
+        </div>
+
+    </div> <!-- <-- This div was misplaced, but it's correct now. -->
+
+        <div id="page-generator" class="hidden">
+            <h1 class="text-3xl font-bold text-center text-[#1d1d1f] mb-6">
+                Trace File Generator
+            </h1>
+
+            <div class="max-w-3xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+                <!-- LANGUAGE FIX: Translated title -->
+                <h2 class="text-xl font-semibold mb-4 text-[#1d1d1f]">Trace Generator</h2>
+                
+                <form id="trace-gen-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <!-- LANGUAGE FIX: Translated label -->
+                            <label for="gen-algoritmo" class="block text-sm font-medium text-gray-600">Algorithm</label>
+                            <select id="gen-algoritmo" name="algoritmo" class="mt-1 block w-full bg-[#f5f5f7] border-gray-300 text-[#1d1d1f] rounded-lg shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500">
+                                <!-- LANGUAGE FIX: Translated options -->
+                                <option value="aleatorio">Random</option>
+                                <option value="sequencial_com_saltos">Sequential with Jumps</option>
+                                <option value="working_set">Working Set (Temporal)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <!-- LANGUAGE FIX: Translated label -->
+                            <label for="gen-nome-arquivo" class="block text-sm font-medium text-gray-600">Filename (e.g., trace)</label>
+                            <!-- LANGUAGE FIX: Translated value -->
+                            <input type="text" id="gen-nome-arquivo" name="nome_arquivo" placeholder="Filename" class="mt-1 block w-full bg-[#f5f5f7] border-gray-300 text-[#1d1d1f] rounded-lg shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <!-- LANGUAGE FIX: Translated label -->
+                            <label for="gen-num-enderecos" class="block text-sm font-medium text-gray-600">Number of Addresses</label>
+                            <input type="number" id="gen-num-enderecos" name="num_enderecos" value="10000" class="mt-1 block w-full bg-[#f5f5f7] border-gray-300 text-[#1d1d1f] rounded-lg shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <!-- LANGUAGE FIX: Translated label -->
+                            <label for="gen-max-pagina" class="block text-sm font-medium text-gray-600">Max Page (e.g., 1023)</label>
+                            <input type="number" id="gen-max-pagina" name="max_pagina" value="1023" class="mt-1 block w-full bg-[#f5f5f7] border-gray-300 text-[#1d1d1f] rounded-lg shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div id="params-sequencial" class="hidden space-y-4 bg-[#f5f5f7] p-4 rounded-lg">
+                            <!-- LANGUAGE FIX: Translated heading -->
+                            <h3 class="text-sm font-medium text-gray-500">Sequential Parameters</h3>
+                            <div>
+                                <!-- LANGUAGE FIX: Translated label -->
+                                <label for="gen-prob-salto" class="block text-sm font-medium text-gray-600">Jump Probability (%)</label>
+                                <input type="number" id="gen-prob-salto" name="prob_salto" value="10" min="0" max="100" class="mt-1 block w-full bg-[#f5f5f7] border-gray-300 text-[#1d1d1f] rounded-lg shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                        <div id="params-working-set" class="hidden space-y-4 bg-[#f5f5f7] p-4 rounded-lg">
+                            <!-- LANGUAGE FIX: Translated heading -->
+                            <h3 class="text-sm font-medium text-gray-500">Working Set Parameters</h3>
+                             <div>
+                                <!-- LANGUAGE FIX: Translated label -->
+                                <label for="gen-tamanho-set" class="block text-sm font-medium text-gray-600">Working Set Size</label>
+                                <input type="number" id="gen-tamanho-set" name="tamanho_set" value="50" min="1" class="mt-1 block w-full bg-[#f5f5f7] border-gray-300 text-[#1d1d1f] rounded-lg shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <!-- LANGUAGE FIX: Translated label -->
+                                <label for="gen-prob-no-set" class="block text-sm font-medium text-gray-600">Set Access Probability (%)</label>
+                                <input type="number" id="gen-prob-no-set" name="prob_no_set" value="90" min="0" max="100" class="mt-1 block w-full bg-[#f5f5f7] border-gray-300 text-[#1d1d1f] rounded-lg shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <button type="submit" id="trace-gen-button" class="w-full md:w-auto flex justify-center py-2 px-6 h-12 items-center border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                            <!-- LANGUAGE FIX: Translated button text -->
+                            Generate Trace
+                        </button>
+                        <div id="trace-gen-status" class="text-sm mt-2 text-gray-600"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div> <!-- <-- This div was misplaced, but it's correct now. -->
+    
+    <script src="/static/simulator.js" defer></script>
+</body>
+</html>
