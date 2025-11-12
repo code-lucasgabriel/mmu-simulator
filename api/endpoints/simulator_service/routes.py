@@ -26,7 +26,7 @@ def get_simulator_page():
     """
     Serves the main HTML page for the simulator.
     """
-    return FileResponse(STATIC_DIR / "simulator.html")
+    return FileResponse(STATIC_DIR / "index.html")
 
 # --- NEW ENDPOINT ---
 @simulator_router.get("/list-tests")
